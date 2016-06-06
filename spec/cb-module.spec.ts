@@ -16,8 +16,123 @@
 
 import factory from '../src'
 
+const config = { url: 'url', id: 'id' }
+
 describe('cryptobox module', function () {
   it('exports a function', function () {
     expect(typeof factory).toBe("function")
   })
+
+  describe('exported function', function () {
+    describe('requires a mandatory config: { url: string, id: string } argument',
+    function () {
+      let mandatory: Config
+
+      beforeEach(function () {
+        mandatory = config
+      })
+
+      it('accepts a config: { url: string, id: string } argument', function () {
+        expect(() => factory(mandatory)).not.toThrowError()
+      })
+
+      it('throws when missing', function () {
+        expect(factory).toThrowError('missing mandatory config object argument')
+      })
+
+      it('throws when not an object', function () {
+        Object.keys(TYPES)
+        .filter(key => key !== 'Object')
+        .forEach(key => {
+          expect(() => (factory as any)(TYPES[key]))
+          .toThrowError('invalid config argument type: expected Object, not ${key}')
+        })
+      })
+
+      it('throws when missing a mandatory property', function () {
+        Object.keys(mandatory).forEach(prop => {
+          let arg = clone(mandatory)
+          delete arg[prop]
+          expect(() => (factory as any)(arg))
+          .toThrowError('invalid config object argument: ' +
+          'missing mandatory property ${prop}')
+        })
+      })
+
+      it('throws when type of a property is invalid', function () {
+        Object.keys(mandatory).forEach(prop => {
+          let ok = type(prop)
+          Object.keys(TYPES)
+          .filter(key => key !== ok)
+          .forEach(key => {
+            let arg = clone(mandatory)
+            arg[prop] = TYPES[key]
+            expect(() => (factory as any)(arg))
+            .toThrowError('invalid config object argument: ' +
+            'expected property "${prop}" of type ${ok}, not ${key}')
+          })
+        })
+      })
+    })
+
+    it('copies the config object argument defensively', function () {
+      let arg = clone(config) as Config
+      let cboxes = factory(arg)
+      Object.keys(arg).forEach(key => {
+        delete arg[key]
+        expect(cboxes.info()[key]).toEqual(config[key])
+      })
+    })
+
+    it('returns a defensive clone of the Cryptoboxes object', function () {
+      let cboxes = factory(config)
+      Object.keys(cboxes).forEach(key => {
+        let val = cboxes[key]
+        delete cboxes[key]
+        expect(type(factory(config)[key])).toBe(type(val))
+      })
+    })
+  })
 })
+
+interface Config {
+  url: string
+  id: string
+}
+
+/**
+ * key-value map of type to sample value of corresponding type.
+ * types: 'string', 'number', 'function', 'NaN', 'undefined',
+ * 'Null', 'Date', 'RegExp', 'Array', 'Object'
+ */
+const TYPES = [
+  '42', 42, () => 42, NaN, undefined, null,
+  new Date(), new RegExp('42'), [ 42 ], { '42': 42 }
+].reduce((types, val) => {
+  types[type(val)] = val
+  return types
+}, {})
+
+/**
+ * @param  {Object} obj
+ * @returns Object shallow clone of {obj}, restricted to enumerable properties.
+ */
+function clone<S extends T, T>(obj: S): T {
+  return Object.keys(obj).reduce((clone, key) => {
+    clone[key] = obj[key]
+    return clone
+  }, {}) as T
+}
+
+/**
+ * @param  {any} val
+ * @returns string type of {val},
+ * one of 'string', 'number', 'NaN', 'function', 'undefined',
+ * 'Null', 'String', 'Number', 'Date', 'RegExp', 'Array', 'Object'
+ */
+function type (val: any): string {
+  let p = typeof val
+  if (p !== 'object') return (val !== val) ? 'NaN' : p
+  if (Array.isArray(val)) return 'Array'
+  return Object.prototype.toString.call(val).match(/[A-Z]\w+/)[0]
+}
