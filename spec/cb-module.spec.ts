@@ -92,7 +92,7 @@ describe('cryptobox module', function () {
         info: () => {}
       }
       const CBOXES = factory(CONFIG)
-      expect(Object.isFrozen(CBOXES)).toBe(true)
+      expect(Object.isFrozen(CBOXES)).toBe(true) // shallow freeze
       Object.keys(CBOXES_API).forEach(prop => {
         expect(type(CBOXES[prop])).toBe(type(CBOXES_API[prop]))
       })
