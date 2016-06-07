@@ -86,13 +86,17 @@ describe('cryptobox module', function () {
       })
     })
 
-    it('returns a defensive clone of the Cryptoboxes object', function () {
-      let cboxes = factory(CONFIG)
-      Object.keys(cboxes).forEach(key => {
-        let val = cboxes[key]
-        delete cboxes[key]
-        expect(type(factory(CONFIG)[key])).toBe(type(val))
+    it('returns an immutable object that implements the Cryptoboxes interface',
+    function () {
+      const CBOXES_API = {
+        info: () => {}
+      }
+      const CBOXES = factory(CONFIG)
+      expect(Object.isFrozen(CBOXES)).toBe(true)
+      Object.keys(CBOXES_API).forEach(prop => {
+        expect(type(CBOXES[prop])).toBe(type(CBOXES_API[prop]))
       })
+      // note that CBOXES may have additional properties
     })
   })
 })
