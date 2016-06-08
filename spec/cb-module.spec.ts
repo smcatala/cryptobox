@@ -44,7 +44,7 @@ describe('cryptobox module', function () {
         Object.keys(TYPES)
         .filter(key => key !== 'Object')
         .forEach(key => {
-          expect(() => (factory as any)(TYPES[key]))
+          expect(() => (<Function>factory)(TYPES[key]))
           .toThrowError('invalid config argument type: expected Object, not ${key}')
         })
       })
@@ -54,7 +54,7 @@ describe('cryptobox module', function () {
         .forEach(prop => {
           let arg = clone(mandatory)
           delete arg[prop]
-          expect(() => (factory as any)(arg))
+          expect(() => (<Function>factory)(arg))
           .toThrowError('invalid config object argument: ' +
           'missing mandatory property ${prop}')
         })
@@ -69,7 +69,7 @@ describe('cryptobox module', function () {
           .forEach(key => {
             let arg = clone(mandatory)
             arg[prop] = TYPES[key]
-            expect(() => (factory as any)(arg))
+            expect(() => (<Function>factory)(arg))
             .toThrowError('invalid config object argument: ' +
             'expected property "${prop}" of type ${ok}, not ${key}')
           })
