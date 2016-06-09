@@ -14,9 +14,9 @@
  * Limitations under the License.
  */
 
-import { default as factory, Cryptoboxes as Cbxs } from '../src'
+import factory, * as Cb from '../src'
 
-const CONFIG: Cbxs.Config = { url: 'url', id: 'id' }
+const CONFIG: Cb.Config = { url: 'url', agent: 'id' }
 
 describe('cryptobox module', function () {
   it('exports a function', function () {
@@ -26,7 +26,7 @@ describe('cryptobox module', function () {
   describe('exported function', function () {
     describe('requires a mandatory config: { url: string, id: string } argument',
     function () {
-      let mandatory: Cbxs.Config
+      let mandatory: Cb.Config
 
       beforeEach(function () {
         mandatory = CONFIG
@@ -37,7 +37,7 @@ describe('cryptobox module', function () {
       })
 
       it('throws when missing', function () {
-        expect(factory).toThrowError('missing mandatory config object argument')
+        expect(factory).toThrowError('invalid argument')
       })
 
       it('throws when not an object', function () {
@@ -45,7 +45,7 @@ describe('cryptobox module', function () {
         .filter(key => key !== 'Object')
         .forEach(key => {
           expect(() => (<Function>factory)(TYPES[key]))
-          .toThrowError('invalid config argument type: expected Object, not ${key}')
+          .toThrowError('invalid argument')
         })
       })
 
@@ -55,8 +55,7 @@ describe('cryptobox module', function () {
           let arg = clone(mandatory)
           delete arg[prop]
           expect(() => (<Function>factory)(arg))
-          .toThrowError('invalid config object argument: ' +
-          'missing mandatory property ${prop}')
+          .toThrowError('invalid argument')
         })
       })
 
@@ -70,31 +69,32 @@ describe('cryptobox module', function () {
             let arg = clone(mandatory)
             arg[prop] = TYPES[key]
             expect(() => (<Function>factory)(arg))
-            .toThrowError('invalid config object argument: ' +
-            'expected property "${prop}" of type ${ok}, not ${key}')
+            .toThrowError('invalid argument')
           })
         })
       })
     })
 
     it('copies the config object argument defensively', function () {
-      let arg = clone(CONFIG) as Cbxs.Config
+      let arg = clone(CONFIG) as Cb.Config
       let cboxes = factory(arg)
       Object.keys(arg).forEach(key => {
         delete arg[key]
-        expect(cboxes.info()[key]).toEqual(CONFIG[key])
+        expect(cboxes.config[key]).toEqual(CONFIG[key])
       })
     })
 
     it('returns an immutable object that implements the Cryptoboxes interface',
     function () {
       const CBOXES_API = {
-        info: () => {}
+        create: () => {},
+        access: () => {},
+        config: {}
       }
       const CBOXES = factory(CONFIG)
       expect(Object.isFrozen(CBOXES)).toBe(true) // shallow freeze
       Object.keys(CBOXES_API).forEach(prop => {
-        expect(type(CBOXES[prop])).toBe(type(CBOXES_API[prop]))
+        expect(type(CBOXES[prop])).toBe(type(CBOXES_API[prop])) // shallow validation
       })
       // note that CBOXES may have additional properties
     })
