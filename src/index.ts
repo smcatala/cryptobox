@@ -127,5 +127,3 @@ function isValidType(creds: Creds) {
 function Cryptobox () {
   throw new Error('Unauthorized')
 }
-
-Cryptobox.prototype.constructor = Cryptobox
