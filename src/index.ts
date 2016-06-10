@@ -1,4 +1,5 @@
-import { default as assign, Assign } from './assign'
+/// <reference path="../typings/index.d.ts" />
+import assign = require('object-assign')
 
 /**
  * Copyright 2016 Stephane M. Catala
