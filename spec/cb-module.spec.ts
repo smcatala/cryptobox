@@ -26,14 +26,14 @@ describe('cryptobox module', function () {
   describe('exported function', function () {
     describe('requires a mandatory config: { url: string, agent: string } argument',
     function () {
-      let mandatory: Cb.Config
+      let config: Cb.Config
 
       beforeEach(function () {
-        mandatory = CONFIG
+        config = CONFIG
       })
 
       it('accepts a config: { url: string, agent: string } argument', function () {
-        expect(() => factory(mandatory)).not.toThrowError()
+        expect(() => factory(config)).not.toThrowError()
       })
 
       it('throws when missing', function () {
@@ -50,9 +50,9 @@ describe('cryptobox module', function () {
       })
 
       it('throws when missing a mandatory property', function () {
-        Object.keys(mandatory)
+        Object.keys(config)
         .forEach(prop => {
-          let arg = clone(mandatory)
+          let arg = clone(config)
           delete arg[prop]
           expect(() => (<Function>factory)(arg))
           .toThrowError('invalid argument')
@@ -60,13 +60,13 @@ describe('cryptobox module', function () {
       })
 
       it('throws when type of a property is invalid', function () {
-        Object.keys(mandatory)
+        Object.keys(config)
         .forEach(prop => {
           let ok = type(prop)
           Object.keys(TYPES)
           .filter(key => key !== ok)
           .forEach(key => {
-            let arg = clone(mandatory)
+            let arg = clone(config)
             arg[prop] = TYPES[key]
             expect(() => (<Function>factory)(arg))
             .toThrowError('invalid argument')
