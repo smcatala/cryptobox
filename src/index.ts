@@ -1,5 +1,6 @@
 /// <reference path="../typings/index.d.ts" />
 import assign = require('object-assign')
+import * as Promise from 'bluebird'
 
 /**
  * Copyright 2016 Stephane M. Catala
@@ -47,8 +48,8 @@ export interface Creds {
 }
 
 export interface Cryptoboxes {
-  create (creds: Creds): Cryptobox
-  access (creds: Creds): Cryptobox
+  create (creds: Creds): Promise<Cryptobox>
+  access (creds: Creds): Promise<Cryptobox>
   config: Config
 }
 
@@ -56,52 +57,63 @@ export interface Cryptobox {
   cryptoboxes: Cryptoboxes
 }
 
-let _pool = Object.create(null) // TODO should be local pouchdb instances
+interface Authorizer<T> {
+  (creds: Creds): Promise<T>
+}
+
+interface Pool<T> {
+  [index: string]: Authorizer<T>
+}
+
+let _pool = <Pool<Cryptobox>>Object.create(null) // TODO should be local pouchdb instances
 
 /**
+ * TODO this is a placeholder/skeleton concept study
  * @public
  * @factory
  * @param {id: string, secret: string} creds
- * @return {Cryptobox} new immutable instance for given creds
- * @throws Error 'invalid credentials' when
+ * @return {Promise<Cryptobox>} resolves to a new immutable instance
+ * for the given creds,
+ * or to an 'invalid credentials' Error when
  * - creds is not a valid credentials object
  * - or a cryptobox instance already exists for the given creds.id
  */
-function Cryptobox (creds: Creds): Cryptobox {
+function Cryptobox (creds: Creds): Promise<Cryptobox> {
   if (!isCreds(creds) || (creds.id in _pool)) {
-    throw new Error('invalid credentials')
+    return Promise.reject(new Error('invalid credentials'))
   }
 
   let _creds = Object.freeze({ // defensive copy
     id: creds.id,
-    hash: creds.secret // TODO SHA256(creds.secret)
+    secret: creds.secret // TODO PBKDF2(creds.secret)
   })
 
   let cryptobox = Object.freeze(Object.create(Cryptobox.prototype))
 
-  _pool[_creds.id] = function access (creds: Creds): Cryptobox {
+  _pool[_creds.id] = function access (creds: Creds): Promise<Cryptobox> {
     if (!isCreds(creds) || (creds.id !== _creds.id)
-    || (creds.secret !== _creds.hash)) { // TODO SHA256(creds.secret) !== _creds.hash
-      throw new TypeError('invalid credentials')
+    || (creds.secret !== _creds.secret)) { // TODO PBKDF2(creds.secret)
+      return Promise.reject(new TypeError('invalid credentials'))
     }
-    return cryptobox
+
+    return Promise.resolve(cryptobox)
   }
 
-  return cryptobox
+  return Promise.resolve(cryptobox)
 }
 
 /**
  * @public
  * @param {id: string, secret: string} creds
- * @return {Cryptobox} for given creds
- * @throws Error 'invalid credentials' when
+ * @return {Promise<Cryptobox>} resolves to the Cryptobox for given creds
+ * or to an 'invalid credentials' Error when
  * - creds is not a valid credentials object
  * - or there is no cryptobox instance for the given creds.id
  * - or creds does not match that of the corresponding cryptobox instance
  */
-function getCryptobox (creds: Creds): Cryptobox {
+function getCryptobox (creds: Creds): Promise<Cryptobox> { // TODO should return a Promise
   if (!isCreds(creds) || !(creds.id in _pool)) {
-    throw new Error('invalid credentials')
+    return Promise.reject(new TypeError('invalid credentials'))
   }
 
   return _pool[creds.id](creds)

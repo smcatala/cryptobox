@@ -38,6 +38,7 @@
   },
   "homepage": "https://github.com/zenyway/cryptobox#readme",
   "dependencies": {
+    "bluebird": "^3.4.0",
     "object-assign": "^4.1.0"
   },
   "devDependencies": {
