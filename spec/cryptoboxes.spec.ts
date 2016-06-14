@@ -144,11 +144,134 @@ describe('Cryptoboxes interface', function () {
         cboxes.create(CREDS),
         cboxes.create(creds)
       ]))
-      .then(() => fail(done)('expected Error'))
+      .then(fail(done, 'expected Error'))
       .catch(Promise.AggregateError, errors =>
         (errors.every((err: Error) =>
           (err.message === 'invalid credentials'))
           ? pass(done)() : fail(done)(errors)))
+    })
+  })
+
+  describe('access', function () {
+    beforeEach(function (done) {
+      cboxes.create(CREDS)
+      .then(done)
+    })
+
+    describe('requires a mandatory credentials: { id: string, secret: string } argument',
+    function () {
+      let creds: Creds
+
+      beforeEach(function () {
+        creds = clone<Creds, Creds>(CREDS)
+      })
+
+      it('accepts a credentials: { id: string, secret: string } argument',
+      function (done) {
+        cboxes.access(creds)
+        .then(pass(done))
+        .catch(fail(done))
+      })
+
+      it('rejects with "invalid credentials" Error when missing', function (done) {
+        (<Function>cboxes.access)()
+        .then(fail(done, 'expected Error'))
+        .catch((err: Error) => ((err.message === 'invalid credentials')
+          ? pass(done)() : fail(done)(err.message))
+        )
+      })
+
+      it('rejects with "invalid credentials" Error when not an object',
+      function (done) {
+        Promise.any(Object.keys(TYPES)
+          .filter(key => key !== 'Object')
+          .map(key => (<Function>cboxes.access)(TYPES[key])))
+        .then(fail(done, 'expected Error'))
+        .catch(Promise.AggregateError, errors =>
+          (errors.every((err: Error) =>
+            (err.message === 'invalid credentials'))
+            ? pass(done)() : fail(done)(errors)))
+      })
+
+      it('rejects with "invalid credentials" Error when missing a mandatory property',
+      function (done) {
+        Promise.any(Object.keys(creds)
+          .map(prop => {
+            let arg = clone(creds)
+            delete arg[prop]
+            return (<Function>cboxes.access)(arg)
+          }))
+        .then(fail(done, 'expected Error'))
+        .catch(Promise.AggregateError, errors =>
+          (errors.every((err: Error) =>
+            (err.message === 'invalid credentials'))
+            ? pass(done)() : fail(done)(errors)))
+      })
+
+      it('rejects with "invalid credentials" Error when type of a property is invalid',
+      function (done) {
+        Promise.any(flatMap(Object.keys(creds), prop => {
+          let ok = type(prop)
+          return Object.keys(TYPES)
+          .filter(key => key !== ok)
+          .map(key => {
+            let arg = clone(creds)
+            arg[prop] = TYPES[key]
+            return (<Function>cboxes.access)(arg)
+          })
+        }))
+        .then(fail(done, 'expected Error'))
+        .catch(Promise.AggregateError, errors =>
+          (errors.every((err: Error) =>
+            (err.message === 'invalid credentials'))
+            ? pass(done)() : fail(done)(errors)))
+      })
+    })
+
+    it('returns an immutable object that implements the Cryptobox interface',
+    function (done) {
+      const CBOX_API = {
+        read: () => {},
+        write: () => {},
+        channel: () => {},
+        info: () => {}
+      }
+
+      cboxes.access(CREDS)
+      .then(cbox => {
+        expect(Object.isFrozen(cbox)).toBe(true) // shallow freeze
+        Object.keys(CBOX_API).forEach(prop => {
+          expect(type(cbox[prop])).toBe(type(CBOX_API[prop])) // shallow validation
+        }) // note that CBOX may have additional properties
+        return Promise.resolve(done())
+      })
+      .catch(fail(done))
+    })
+
+    it('rejects with "invalid credentials" Error ' +
+    'when there is no cryptobox instance for the given creds.id',
+    function (done) {
+      let creds = clone<Creds,Creds>(CREDS)
+      creds.id += '*'
+
+      cboxes.access(creds)
+      .then(fail(done, 'expected Error'))
+      .catch((err: Error) => (err.message === 'invalid credentials')
+        ? pass(done)() : fail(done)(err))
+    })
+
+    it('rejects with "invalid credentials" Error when the credentials ' +
+    'do not match those of the corresponding cryptobox instance',
+    function (done) {
+      let creds = clone<Creds, Creds>(CREDS)
+      Object.keys(creds)
+      .filter(key => key != 'id')
+      .forEach(key => creds[key] += '*')
+
+      cboxes.access(creds)
+      .then(fail(done, 'expected Error'))
+      .catch((err: Error) => (err.message === 'invalid credentials')
+        ? pass(done)() : fail(done)(err))
     })
   })
 })

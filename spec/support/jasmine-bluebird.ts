@@ -5,7 +5,7 @@ import { resolve, reject } from 'bluebird'
  * helper function for proper termination of Bluebird promises
  * when calling jasmine's done()
  * @param  {DoneFn} done
- * @returns {Promise<void>} resolved
+ * @returns {(any?): Promise<void>} resolved
  * @see http://bluebirdjs.com/docs/warning-explanations.html#warning-a-promise-was-created-in-a-handler-but-was-not-returned-from-it
  */
 export function pass (done: DoneFn) {
@@ -16,9 +16,10 @@ export function pass (done: DoneFn) {
  * helper function for proper termination of Bluebird promises
  * when calling jasmine's done.fail()
  * @param  {DoneFn} done
- * @returns {Promise<void>} resolved
+ * @param  {string?} msg optional, overrides input argument of returned function
+ * @returns {(any?): Promise<void>} resolved
  * @see http://bluebirdjs.com/docs/warning-explanations.html#warning-a-promise-was-created-in-a-handler-but-was-not-returned-from-it
  */
 export function fail (done: DoneFn, msg?: string) {
-  return (err?: Error | string) => resolve(done.fail(msg || err))
+  return (val?: any) => resolve(done.fail(msg || val))
 }
