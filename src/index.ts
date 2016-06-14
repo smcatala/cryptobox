@@ -25,9 +25,71 @@ import * as Promise from 'bluebird'
  * - creds is not a valid credentials object {url: string, id: string}
  * - or a cryptobox instance already exists for the given creds.id
  */
-export default function getFactory (config: Config): Cryptoboxes {
+export default function (config: Config): Cryptoboxes {
   if (!isConfig(config)) {
     throw new Error('invalid argument')
+  }
+
+  interface AccessPool<T> {
+    [index: string]: Authorizer<T>
+  }
+
+  interface Authorizer<T> {
+    (creds: Creds): Promise<T>
+  }
+
+  let _pool = <AccessPool<Cryptobox>>Object.create(null) // TODO should be local pouchdb instances
+
+  /**
+   * TODO this is a placeholder/skeleton concept study
+   * @public
+   * @factory
+   * @param {id: string, secret: string} creds
+   * @return {Promise<Cryptobox>} resolves to a new immutable instance
+   * for the given creds,
+   * or to an 'invalid credentials' Error when
+   * - creds is not a valid credentials object
+   * - or a cryptobox instance already exists for the given creds.id
+   */
+  function Cryptobox (creds: Creds): Promise<Cryptobox> {
+    if (!isCreds(creds) || (creds.id in _pool)) {
+      return Promise.reject(new Error('invalid credentials'))
+    }
+
+    let _creds = Object.freeze({ // defensive copy
+      id: creds.id,
+      secret: creds.secret // TODO PBKDF2(creds.secret)
+    })
+
+    let cryptobox = Object.freeze(Object.create(Cryptobox.prototype))
+
+    _pool[_creds.id] = function access (creds: Creds): Promise<Cryptobox> {
+      if (!isCreds(creds) || (creds.id !== _creds.id)
+      || (creds.secret !== _creds.secret)) { // TODO PBKDF2(creds.secret)
+        return Promise.reject(new Error('invalid credentials'))
+      }
+
+      return Promise.resolve(cryptobox)
+    }
+
+    return Promise.resolve(cryptobox)
+  }
+
+  /**
+   * @public
+   * @param {id: string, secret: string} creds
+   * @return {Promise<Cryptobox>} resolves to the Cryptobox for given creds
+   * or to an 'invalid credentials' Error when
+   * - creds is not a valid credentials object
+   * - or there is no cryptobox instance for the given creds.id
+   * - or creds does not match that of the corresponding cryptobox instance
+   */
+  function getCryptobox (creds: Creds): Promise<Cryptobox> { // TODO should return a Promise
+    if (!isCreds(creds) || !(creds.id in _pool)) {
+      return Promise.reject(new Error('invalid credentials'))
+    }
+
+    return _pool[creds.id](creds)
   }
 
   return Cryptobox.prototype.cryptoboxes = Object.freeze({
@@ -55,68 +117,6 @@ export interface Cryptoboxes {
 
 export interface Cryptobox {
   cryptoboxes: Cryptoboxes
-}
-
-interface Authorizer<T> {
-  (creds: Creds): Promise<T>
-}
-
-interface Pool<T> {
-  [index: string]: Authorizer<T>
-}
-
-let _pool = <Pool<Cryptobox>>Object.create(null) // TODO should be local pouchdb instances
-
-/**
- * TODO this is a placeholder/skeleton concept study
- * @public
- * @factory
- * @param {id: string, secret: string} creds
- * @return {Promise<Cryptobox>} resolves to a new immutable instance
- * for the given creds,
- * or to an 'invalid credentials' Error when
- * - creds is not a valid credentials object
- * - or a cryptobox instance already exists for the given creds.id
- */
-function Cryptobox (creds: Creds): Promise<Cryptobox> {
-  if (!isCreds(creds) || (creds.id in _pool)) {
-    return Promise.reject(new Error('invalid credentials'))
-  }
-
-  let _creds = Object.freeze({ // defensive copy
-    id: creds.id,
-    secret: creds.secret // TODO PBKDF2(creds.secret)
-  })
-
-  let cryptobox = Object.freeze(Object.create(Cryptobox.prototype))
-
-  _pool[_creds.id] = function access (creds: Creds): Promise<Cryptobox> {
-    if (!isCreds(creds) || (creds.id !== _creds.id)
-    || (creds.secret !== _creds.secret)) { // TODO PBKDF2(creds.secret)
-      return Promise.reject(new TypeError('invalid credentials'))
-    }
-
-    return Promise.resolve(cryptobox)
-  }
-
-  return Promise.resolve(cryptobox)
-}
-
-/**
- * @public
- * @param {id: string, secret: string} creds
- * @return {Promise<Cryptobox>} resolves to the Cryptobox for given creds
- * or to an 'invalid credentials' Error when
- * - creds is not a valid credentials object
- * - or there is no cryptobox instance for the given creds.id
- * - or creds does not match that of the corresponding cryptobox instance
- */
-function getCryptobox (creds: Creds): Promise<Cryptobox> { // TODO should return a Promise
-  if (!isCreds(creds) || !(creds.id in _pool)) {
-    return Promise.reject(new TypeError('invalid credentials'))
-  }
-
-  return _pool[creds.id](creds)
 }
 
 /**
