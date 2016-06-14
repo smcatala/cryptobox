@@ -15,6 +15,8 @@
  */
 
 import factory, * as Cb from '../src'
+import { TYPES, type } from './support/types'
+import { clone } from './support/clone'
 
 const CONFIG: Cb.Config = { url: 'url', agent: 'id' }
 
@@ -100,40 +102,3 @@ describe('cryptobox module', function () {
     })
   })
 })
-
-/**
- * key-value map of type to sample value of corresponding type.
- * types: 'string', 'number', 'function', 'NaN', 'undefined',
- * 'Null', 'Date', 'RegExp', 'Array', 'Object'
- */
-const TYPES = [
-  '42', 42, () => 42, NaN, undefined, null,
-  new Date(), new RegExp('42'), [ 42 ], { '42': 42 }
-].reduce((types, val) => {
-  types[type(val)] = val
-  return types
-}, {})
-
-/**
- * @param  {any} val
- * @returns string type of {val},
- * one of 'string', 'number', 'NaN', 'function', 'undefined',
- * 'Null', 'String', 'Number', 'Date', 'RegExp', 'Array', 'Object'
- */
-function type (val: any): string {
-  let p = typeof val
-  if (p !== 'object') return (val !== val) ? 'NaN' : p
-  if (Array.isArray(val)) return 'Array'
-  return Object.prototype.toString.call(val).match(/[A-Z]\w+/)[0]
-}
-
-/**
- * @param  {Object} obj
- * @returns Object shallow clone of {obj}, restricted to enumerable properties.
- */
-function clone<S extends T, T>(obj: S): T {
-  return Object.keys(obj).reduce((clone, key) => {
-    clone[key] = obj[key]
-    return clone
-  }, {}) as T
-}
