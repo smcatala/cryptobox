@@ -14,11 +14,11 @@
  * Limitations under the License.
  */
 
-import factory, * as Cb from '../src'
+import factory, { Config } from '../src'
 import { TYPES, type } from './support/types'
 import { clone } from './support/clone'
 
-const CONFIG: Cb.Config = { url: 'url', agent: 'id' }
+const CONFIG: Config = { url: 'url', agent: 'id' }
 
 describe('cryptobox module', function () {
   it('exports a function', function () {
@@ -28,10 +28,10 @@ describe('cryptobox module', function () {
   describe('exported function', function () {
     describe('requires a mandatory config: { url: string, agent: string } argument',
     function () {
-      let config: Cb.Config
+      let config: Config
 
       beforeEach(function () {
-        config = CONFIG
+        config = clone<Config,Config>(CONFIG)
       })
 
       it('accepts a config: { url: string, agent: string } argument', function () {
@@ -78,7 +78,7 @@ describe('cryptobox module', function () {
     })
 
     it('copies the config object argument defensively', function () {
-      let arg = clone(CONFIG) as Cb.Config
+      let arg = clone<Config, Config>(CONFIG)
       let cboxes = factory(arg)
       Object.keys(arg).forEach(key => {
         delete arg[key]
