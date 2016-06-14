@@ -15,15 +15,15 @@
  */
 
 import * as Promise from 'bluebird'
-import factory, * as Cb from '../src'
+import factory, { Cryptoboxes, Config, Creds } from '../src'
 import { TYPES, type } from './support/types'
 import { clone } from './support/clone'
 import { pass, fail } from './support/jasmine-bluebird'
 
-const CONFIG: Cb.Config = { url: 'url', agent: 'id' }
+const CONFIG: Config = { url: 'url', agent: 'id' }
 
 describe('Cryptoboxes interface', function () {
-  let cboxes: Cb.Cryptoboxes = factory(CONFIG)
+  let cboxes: Cryptoboxes = factory(CONFIG)
 
   beforeEach(function () {
     cboxes = factory(CONFIG)
@@ -32,7 +32,7 @@ describe('Cryptoboxes interface', function () {
   describe('create', function () {
     describe('requires a mandatory credentials: { id: string, secret: string } argument',
     function () {
-      let creds: Cb.Creds
+      let creds: Creds
 
       beforeEach(function () {
         creds = { id: 'id', secret: 'secret' }
