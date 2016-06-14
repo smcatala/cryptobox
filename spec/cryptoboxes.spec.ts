@@ -15,12 +15,14 @@
  */
 
 import * as Promise from 'bluebird'
-import factory, { Cryptoboxes, Config, Creds } from '../src'
+import factory, { Cryptoboxes, Config, Cryptobox, Creds } from '../src'
 import { TYPES, type } from './support/types'
 import { clone } from './support/clone'
 import { pass, fail } from './support/jasmine-bluebird'
 
 const CONFIG: Config = { url: 'url', agent: 'id' }
+
+const CREDS: Creds = { id: 'id', secret: 'secret' }
 
 describe('Cryptoboxes interface', function () {
   let cboxes: Cryptoboxes = factory(CONFIG)
@@ -35,7 +37,7 @@ describe('Cryptoboxes interface', function () {
       let creds: Creds
 
       beforeEach(function () {
-        creds = { id: 'id', secret: 'secret' }
+        creds = clone<Creds, Creds>(CREDS)
       })
 
       it('accepts a credentials: { id: string, secret: string } argument',
@@ -98,6 +100,55 @@ describe('Cryptoboxes interface', function () {
             (err.message === 'invalid credentials'))
             ? pass(done)() : fail(done)(errors)))
       })
+    })
+
+    it('copies the credentials object defensively', function (done) {
+      let creds = clone<Creds, Creds>(CREDS)
+      cboxes.create(creds)
+      .then(cbox => {
+        Object.keys(CREDS).forEach(key => creds[key] += '*')
+        return cboxes.access(CREDS)
+      })
+      .then(pass(done))
+      .catch(fail(done))
+    })
+
+    it('returns an immutable object that implements the Cryptobox interface',
+    function (done) {
+      const CBOX_API = {
+        read: () => {},
+        write: () => {},
+        channel: () => {},
+        info: () => {}
+      }
+      cboxes.create(CREDS)
+      .then(cbox => {
+        expect(Object.isFrozen(cbox)).toBe(true) // shallow freeze
+        Object.keys(CBOX_API).forEach(prop => {
+          expect(type(cbox[prop])).toBe(type(CBOX_API[prop])) // shallow validation
+        }) // note that CBOX may have additional properties
+        return Promise.resolve(done())
+      })
+      .catch(fail(done))
+    })
+
+    it('rejects with "invalid credentials" Error when a cryptobox instance already exists for the given creds.id',
+    function (done) {
+      let creds = clone<Creds, Creds>(CREDS)
+      Object.keys(creds)
+      .filter(key => key != 'id')
+      .forEach(key => creds[key] += '*')
+
+      cboxes.create(CREDS)
+      .then(cbox => Promise.any([
+        cboxes.create(CREDS),
+        cboxes.create(creds)
+      ]))
+      .then(() => fail(done)('expected Error'))
+      .catch(Promise.AggregateError, errors =>
+        (errors.every((err: Error) =>
+          (err.message === 'invalid credentials'))
+          ? pass(done)() : fail(done)(errors)))
     })
   })
 })
