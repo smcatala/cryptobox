@@ -23,13 +23,22 @@ module.exports = function (config) {
       'karma-jasmine',
       'karma-jasmine-html-reporter',
       'karma-spec-reporter', // output to terminal
-      'karma-junit-reporter' // output to xml file
+      'karma-junit-reporter', // output to xml file
+      'karma-coverage'
     ],
     preprocessors: {
       'spec/**/*.{js,ts}': [ 'browserify' ]
     },
     browserify: { // https://github.com/nikku/karma-browserify#plugins
       debug: true,
+      transform: [
+        [
+          'browserify-istanbul', {
+            'ignore': '**/spec/**',
+            'instrumenterConfig': { 'embedSource': true }
+          }
+        ]
+      ],
       plugin: [
         [ 'tsify', { 'project': 'spec' } ]
       ] /*,
@@ -40,8 +49,20 @@ module.exports = function (config) {
       } */
     },
     reporters: [ // 'progress' | 'dots' | 'kjhtml' | 'junit' | 'spec' | ' coverage'
-      'spec', 'kjhtml', 'junit'
+      'spec', 'kjhtml', 'junit', 'coverage'
     ],
+    coverageReporter: {
+      dir: 'spec/reports/coverage',
+      reporters: [
+        {
+          type: 'json',
+          subdir: function (browser) {
+            return browser.toLowerCase().split(/[ /-]/)[0];
+          },
+          file: 'coverage.json'
+        }
+      ]
+    },
     junitReporter: {
       outputDir: 'spec/reports',
       outputFile: undefined, // filename based on browser name
