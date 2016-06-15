@@ -61,13 +61,39 @@ export default function (config: Config): Cryptoboxes {
       secret: creds.secret // TODO PBKDF2(creds.secret)
     })
 
-    let cryptobox = Object.freeze(Object.create(Cryptobox.prototype))
+    let core = (<Function>CryptoboxCore)() // default to factory call
+
+    let cryptobox: Cryptobox = Object.create(Cryptobox.prototype)
+
+    /**
+     * authorization decorator
+     */
+    cryptobox.read = function () {
+      if (!isLocked()) return // an Observable Error
+      return core.read()
+    }
+
+    // TODO decorators for write, channel, info
+
+    cryptobox = Object.freeze(cryptobox)
+
+    let _lock: number
+
+    function unlock () {
+      _lock = Date.now() + 900000 // 15min
+    }
+
+    function isLocked () {
+      return Date.now() < _lock
+    }
 
     _pool[_creds.id] = function access (creds: Creds): Promise<Cryptobox> {
       if (!isCreds(creds) || (creds.id !== _creds.id)
       || (creds.secret !== _creds.secret)) { // TODO PBKDF2(creds.secret)
         return Promise.reject(new Error('invalid credentials'))
       }
+
+      unlock()
 
       return Promise.resolve(cryptobox)
     }
@@ -116,6 +142,7 @@ export interface Cryptoboxes {
 }
 
 export interface Cryptobox {
+  read (): void // placeholder
   cryptoboxes: Cryptoboxes
 }
 
@@ -137,4 +164,15 @@ function isCreds(creds: any): creds is Creds {
 function isConfig(config: any): config is Config {
   return config && (typeof config.url === 'string')
     && (typeof config.agent === 'string')
+}
+
+// placeholder
+class CryptoboxCore {
+  /**
+   * @factory
+   */
+  constructor () {
+    return Object.create(CryptoboxCore.prototype)
+  }
+  read () {}
 }
