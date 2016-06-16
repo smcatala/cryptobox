@@ -106,6 +106,17 @@ describe('Cryptoboxes interface', function () {
       .catch(fail(done))
     })
 
+    it('returns an "instanceof" itself, ' +
+    'i.e. the constructor of the returned instance is itself',
+    function (done) {
+      cboxes.create(CREDS)
+      .then(cbox => {
+        expect(cbox instanceof cboxes.create).toBe(true)
+        return Promise.resolve(done())
+      })
+      .catch(fail(done))
+    })
+
     it('returns an immutable object that implements the Cryptobox interface',
     function (done) {
       const CBOX_API = {
