@@ -61,12 +61,12 @@ export default function (config: Config): Cryptoboxes {
       secret: creds.secret // TODO PBKDF2(creds.secret)
     })
 
-    let core = (<Function>CryptoboxCore)() // default to factory call
+    let core = (<Function>CryptoboxCore)()
 
     let cryptobox: Cryptobox = Object.create(Cryptobox.prototype)
 
     /**
-     * authorization decorator
+     * authorization decorator (placeholder)
      */
     cryptobox.read = function () {
       if (!isLocked()) return // an Observable Error
@@ -87,26 +87,7 @@ export default function (config: Config): Cryptoboxes {
       return Date.now() < _lock
     }
 
-    /**
-     * @public
-     * @param {id: string, secret: string} creds
-     * @return {Promise<Cryptobox>} resolves to the Cryptobox for given creds
-     * or to an 'invalid credentials' Error when
-     * - creds is not a valid credentials object
-     * - or there is no cryptobox instance for the given creds.id
-     * - or creds does not match that of the corresponding cryptobox instance
-     */
-    function getCryptobox (creds: Creds): Promise<Cryptobox> { // TODO should return a Promise
-      if (!isCreds(creds) || !(creds.id in _pool)) {
-        return Promise.reject(new Error('invalid credentials'))
-      }
-
-      unlock()
-
-      return _pool[creds.id](creds)
-    }
-
-    _pool[_creds.id] = function access (creds: Creds): Promise<Cryptobox> {
+    _pool[_creds.id] = function (creds: Creds): Promise<Cryptobox> {
       if (!isCreds(creds) || (creds.id !== _creds.id)
       || (creds.secret !== _creds.secret)) { // TODO PBKDF2(creds.secret)
         return Promise.reject(new Error('invalid credentials'))
@@ -117,7 +98,26 @@ export default function (config: Config): Cryptoboxes {
       return Promise.resolve(cryptobox)
     }
 
+    unlock()
+
     return Promise.resolve(cryptobox)
+  }
+
+  /**
+   * @public
+   * @param {id: string, secret: string} creds
+   * @return {Promise<Cryptobox>} resolves to the Cryptobox for given creds
+   * or to an 'invalid credentials' Error when
+   * - creds is not a valid credentials object
+   * - or there is no cryptobox instance for the given creds.id
+   * - or creds does not match that of the corresponding cryptobox instance
+   */
+  function getCryptobox (creds: Creds): Promise<Cryptobox> { // TODO should return a Promise
+    if (!isCreds(creds) || !(creds.id in _pool)) {
+      return Promise.reject(new Error('invalid credentials'))
+    }
+
+    return _pool[creds.id](creds)
   }
 
   return Cryptobox.prototype.cryptoboxes = Object.freeze({
