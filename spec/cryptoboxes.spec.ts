@@ -70,11 +70,8 @@ describe('Cryptoboxes interface', function () {
       it('rejects with "invalid credentials" Error when missing a mandatory property',
       function (done) {
         Promise.any(Object.keys(creds)
-          .map(prop => {
-            let arg = clone(creds)
-            delete arg[prop]
-            return (<Function>cboxes.create)(arg)
-          }))
+          .map(prop => setProperty(clone(creds), prop)) // delete prop
+          .map(arg => (<Function>cboxes.create)(arg)))
         .then(fail(done, 'expected Error'))
         .catch(Promise.AggregateError, errors =>
           (errors.every((err: Error) =>
@@ -192,11 +189,8 @@ describe('Cryptoboxes interface', function () {
       it('rejects with "invalid credentials" Error when missing a mandatory property',
       function (done) {
         Promise.any(Object.keys(creds)
-          .map(prop => {
-            let arg = clone(creds)
-            delete arg[prop]
-            return (<Function>cboxes.access)(arg)
-          }))
+          .map(prop => setProperty(clone(creds), prop)) // delete prop
+          .map(arg => (<Function>cboxes.access)(arg)))
         .then(fail(done, 'expected Error'))
         .catch(Promise.AggregateError, errors =>
           (errors.every((err: Error) =>

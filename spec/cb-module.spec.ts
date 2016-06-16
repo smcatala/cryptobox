@@ -53,12 +53,9 @@ describe('cryptobox module', function () {
 
       it('throws when missing a mandatory property', function () {
         Object.keys(config)
-        .forEach(prop => {
-          let arg = clone(config)
-          delete arg[prop]
-          expect(() => (<Function>factory)(arg))
-          .toThrowError('invalid argument')
-        })
+        .map(prop => setProperty(clone(config), prop]))
+        .forEach(arg => expect(() => (<Function>factory)(arg))
+          .toThrowError('invalid argument'))
       })
 
       it('throws when type of a property is invalid', function () {

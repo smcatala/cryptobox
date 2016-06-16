@@ -2,10 +2,13 @@
  * @param  {Object} obj
  * @param  {string} key
  * @param  {any} val
- * @return {Object} obj with (key, val) property
+ * @return {Object} obj with (key, val) property,
+ * or without the key property, if val is not supplied,
+ * or as is, if key is not a property in obj
  */
-export function setProperty (obj: Object, key: string, val: any): Object {
-  obj[key] = val
+export function setProperty (obj: Object, key: string, val?: any): Object {
+	if (!(key in obj)) return obj
+  arguments.length > 2 ? obj[key] = val : delete obj[key]
   return obj
 }
 
