@@ -53,7 +53,7 @@ describe('cryptobox module', function () {
 
       it('throws when missing a mandatory property', function () {
         Object.keys(config)
-        .map(prop => setProperty(clone(config), prop]))
+        .map(prop => setProperty(clone(config), prop)) // delete prop
         .forEach(arg => expect(() => (<Function>factory)(arg))
           .toThrowError('invalid argument'))
       })

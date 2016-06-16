@@ -125,7 +125,7 @@ describe('Cryptoboxes interface', function () {
       .catch(fail(done))
     })
 
-    it('rejects with "invalid credentials" Error when a cryptobox instance already exists for the given creds.id',
+    it('rejects with "invalid credentials" Error when a Cryptobox instance already exists for the given creds.id',
     function (done) {
       let creds = clone<Creds, Creds>(CREDS)
       Object.keys(creds)
@@ -146,8 +146,11 @@ describe('Cryptoboxes interface', function () {
   })
 
   describe('access', function () {
+    let cryptobox: Cryptobox
+
     beforeEach(function (done) {
       cboxes.create(CREDS)
+      .then(cbox => cryptobox = cbox)
       .then(done)
     })
 
@@ -214,28 +217,18 @@ describe('Cryptoboxes interface', function () {
       })
     })
 
-    it('returns an immutable object that implements the Cryptobox interface',
+    it('returns a previously created Cryptobox instance',
     function (done) {
-      const CBOX_API = {
-        read: () => {},
-        write: () => {},
-        channel: () => {},
-        info: () => {}
-      }
-
       cboxes.access(CREDS)
       .then(cbox => {
-        expect(Object.isFrozen(cbox)).toBe(true) // shallow freeze
-        Object.keys(CBOX_API).forEach(prop => {
-          expect(type(cbox[prop])).toBe(type(CBOX_API[prop])) // shallow validation
-        }) // note that CBOX may have additional properties
+        expect(cbox).toBe(cryptobox)
         return Promise.resolve(done())
       })
       .catch(fail(done))
     })
 
     it('rejects with "invalid credentials" Error ' +
-    'when there is no cryptobox instance for the given creds.id',
+    'when there is no Cryptobox instance for the given creds.id',
     function (done) {
       let creds = clone<Creds,Creds>(CREDS)
       creds.id += '*'
@@ -247,7 +240,7 @@ describe('Cryptoboxes interface', function () {
     })
 
     it('rejects with "invalid credentials" Error when the credentials ' +
-    'do not match those of the corresponding cryptobox instance',
+    'do not match those of the corresponding Cryptobox instance',
     function (done) {
       let creds = clone<Creds, Creds>(CREDS)
       Object.keys(creds)
