@@ -17,7 +17,7 @@
 import * as Promise from 'bluebird'
 import factory, { Cryptoboxes, Config, Cryptobox, Creds } from '../src'
 import { TYPES, type } from './support/types'
-import { clone } from './support/clone'
+import { clone, flatMap, setProperty } from './support/helpers'
 import { pass, fail } from './support/jasmine-bluebird'
 
 const CONFIG: Config = { url: 'url', agent: 'id' }
@@ -84,16 +84,12 @@ describe('Cryptoboxes interface', function () {
 
       it('rejects with "invalid credentials" Error when type of a property is invalid',
       function (done) {
-        Promise.any(flatMap(Object.keys(creds), prop => {
-          let ok = type(prop)
-          return Object.keys(TYPES)
-          .filter(key => key !== ok)
-          .map(key => {
-            let arg = clone(creds)
-            arg[prop] = TYPES[key]
-            return (<Function>cboxes.create)(arg)
-          })
-        }))
+        Promise.any(flatMap(Object.keys(creds)
+          .map(prop => ({ prop: prop, type: type(creds[prop]) })),
+        ctx => Object.keys(TYPES)
+          .filter(key => key !== ctx.type)
+          .map(key => setProperty(clone(creds), ctx.prop, TYPES[key])))
+        .map(arg => (<Function>cboxes.create)(arg)))
         .then(fail(done, 'expected Error'))
         .catch(Promise.AggregateError, errors =>
           (errors.every((err: Error) =>
@@ -210,16 +206,12 @@ describe('Cryptoboxes interface', function () {
 
       it('rejects with "invalid credentials" Error when type of a property is invalid',
       function (done) {
-        Promise.any(flatMap(Object.keys(creds), prop => {
-          let ok = type(prop)
-          return Object.keys(TYPES)
-          .filter(key => key !== ok)
-          .map(key => {
-            let arg = clone(creds)
-            arg[prop] = TYPES[key]
-            return (<Function>cboxes.access)(arg)
-          })
-        }))
+        Promise.any(flatMap(Object.keys(creds)
+          .map(prop => ({ prop: prop, type: type(creds[prop]) })),
+        ctx => Object.keys(TYPES)
+          .filter(key => key !== ctx.type)
+          .map(key => setProperty(clone(creds), ctx.prop, TYPES[key])))
+        .map(arg => (<Function>cboxes.access)(arg)))
         .then(fail(done, 'expected Error'))
         .catch(Promise.AggregateError, errors =>
           (errors.every((err: Error) =>
@@ -275,14 +267,3 @@ describe('Cryptoboxes interface', function () {
     })
   })
 })
-
-/**
- * @param  {Array<T>} arr
- * @param  {(x: T) => Array<U>} fn map function that outputs an array
- * for each input value
- * @returns {Array<U>} concatenated array of all output arrays
- */
-function flatMap<T, U>(arr: T[], fn: (x: T) => U[]) : U[] {
-  return Array.prototype.concat.apply([], arr.map(fn))
-//  return array.reduce((map: U[], val: T) => [...map, ...fn(val)], <U[]> [])
-}
