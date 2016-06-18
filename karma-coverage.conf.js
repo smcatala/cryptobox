@@ -11,8 +11,7 @@ module.exports = function (config) {
       }
     },
     files: [
-      'spec/*.js',
-      'spec/*.ts'
+      'spec/index.ts'
     ],
     autoWatch: true,
     singleRun: true,
