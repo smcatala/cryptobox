@@ -25,7 +25,7 @@ const CONFIG: Config = { url: 'url', agent: 'id' }
 
 const CREDS: Creds = { id: 'id', secret: 'secret' }
 
-describe('Cryptobox interface', function () {
+describe('core Cryptobox interface', function () {
   let cbox: Cryptobox
   beforeEach(function (done) {
     factory(CONFIG).create(CREDS)
