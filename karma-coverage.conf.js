@@ -39,7 +39,8 @@ module.exports = function (config) {
         ]
       ],
       plugin: [
-        [ 'tsify', { 'project': 'spec' } ]
+        [ 'tsify', { 'project': 'spec' } ],
+        [ 'proxyquire-universal' ]
       ] /*,
       configure: function (bundle) {
         bundle.on('prebundle', function () {

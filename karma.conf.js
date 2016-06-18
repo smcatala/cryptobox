@@ -30,7 +30,8 @@ module.exports = function (config) {
     browserify: { // https://github.com/nikku/karma-browserify#plugins
       debug: true,
       plugin: [
-        [ 'tsify', { 'project': 'spec' } ]
+        [ 'tsify', { 'project': 'spec' } ],
+        [ 'proxyquire-universal' ]
       ] /*,
       configure: function (bundle) {
         bundle.on('prebundle', function () {
