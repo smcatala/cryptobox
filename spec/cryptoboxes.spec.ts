@@ -1,4 +1,4 @@
-/// <reference path="../typings/index.d.ts" />
+/// <reference path="../src/cryptobox.d.ts" />
 
 /**
  * Copyright 2016 Stephane M. Catala
@@ -14,8 +14,8 @@
  * Limitations under the License.
  */
 
-import * as Promise from 'bluebird'
-import factory, { Cryptoboxes, Config, Cryptobox, Creds } from '../src'
+import proxyquire = require('proxyquire')
+import Promise = require('bluebird')
 import { TYPES, type } from './support/types'
 import { clone, flatMap, setProperty } from './support/helpers'
 import { pass, fail } from './support/jasmine-bluebird'
@@ -25,9 +25,25 @@ const CONFIG: Config = { url: 'url', agent: 'id' }
 const CREDS: Creds = { id: 'id', secret: 'secret' }
 
 describe('Cryptoboxes interface', function () {
-  let cboxes: Cryptoboxes = factory(CONFIG)
+  let factory: CryptoboxesFactory
+  let cboxes: Cryptoboxes
+  let CryptoboxCore: jasmine.Spy & Cryptobox
+
+  beforeEach(function () { // set up CryptoboxCore mock
+    CryptoboxCore = <jasmine.Spy & Cryptobox> jasmine.createSpy('CryptoboxCore')
+    let CryptoboxMethods = jasmine.createSpyObj('CryptoboxMethods', [
+      'read', 'write', 'channel', 'info'
+    ])
+    Object.keys(CryptoboxMethods)
+    .forEach(method => CryptoboxCore[method] = CryptoboxMethods[method])
+  })
 
   beforeEach(function () {
+    factory = proxyquire('../src', {
+      './cryptobox-core': CryptoboxCore,
+      '@noCallThru': true
+    })
+
     cboxes = factory(CONFIG)
   })
 
@@ -143,7 +159,7 @@ describe('Cryptoboxes interface', function () {
       .filter(key => key != 'id')
       .forEach(key => creds[key] += '*')
 
-      cboxes.create(CREDS)
+      ;(<Promise<Cryptobox>>cboxes.create(CREDS)) // Bluebird Promise
       .then(cbox => Promise.any([
         cboxes.create(CREDS),
         cboxes.create(creds)
@@ -153,6 +169,14 @@ describe('Cryptoboxes interface', function () {
         (errors.every((err: Error) =>
           (err.message === 'invalid credentials'))
           ? pass(done)() : fail(done)(errors)))
+    })
+
+    it('calls the core Cryptobox factory', function (done) {
+      cboxes.create(CREDS)
+      .then(cbox => {
+        expect(CryptoboxCore).toHaveBeenCalled()
+        return Promise.resolve(done())
+      })
     })
   })
 
