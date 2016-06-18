@@ -11,8 +11,7 @@ module.exports = function (config) {
       }
     },
     files: [
-      'spec/*.js',
-      'spec/*.ts'
+      'spec/index.ts'
     ],
     autoWatch: true,
     singleRun: true,
@@ -40,7 +39,8 @@ module.exports = function (config) {
         ]
       ],
       plugin: [
-        [ 'tsify', { 'project': 'spec' } ]
+        [ 'tsify', { 'project': 'spec' } ],
+        [ 'proxyquire-universal' ]
       ] /*,
       configure: function (bundle) {
         bundle.on('prebundle', function () {

@@ -1,6 +1,4 @@
-/// <reference path="../typings/index.d.ts" />
-import assign = require('object-assign')
-import * as Promise from 'bluebird'
+/// <reference path="./cryptobox.d.ts" />
 
 /**
  * Copyright 2016 Stephane M. Catala
@@ -16,6 +14,10 @@ import * as Promise from 'bluebird'
  * Limitations under the License.
  */
 
+import assign = require('object-assign')
+import Promise = require('bluebird')
+import CryptoboxCoreClass = require('./cryptobox-core')
+
 /**
  * @public
  * @factory
@@ -25,7 +27,7 @@ import * as Promise from 'bluebird'
  * - creds is not a valid credentials object {url: string, id: string}
  * - or a cryptobox instance already exists for the given creds.id
  */
-export default function (config: Config): Cryptoboxes {
+export = <CryptoboxesFactory> function (config) {
   if (!isConfig(config)) {
     throw new Error('invalid argument')
   }
@@ -61,7 +63,7 @@ export default function (config: Config): Cryptoboxes {
       secret: creds.secret // TODO PBKDF2(creds.secret)
     })
 
-    let core = (<Function>CryptoboxCore)()
+    let core: CryptoboxCore = (<Function>CryptoboxCoreClass)()
 
     let cryptobox: Cryptobox = Object.create(Cryptobox.prototype)
 
@@ -127,27 +129,6 @@ export default function (config: Config): Cryptoboxes {
   })
 }
 
-export interface Config {
-  url: string
-  agent: string
-}
-
-export interface Creds {
-  id: string,
-  secret: string
-}
-
-export interface Cryptoboxes {
-  create (creds: Creds): Promise<Cryptobox>
-  access (creds: Creds): Promise<Cryptobox>
-  config: Config
-}
-
-export interface Cryptobox {
-  read (): void // placeholder
-  cryptoboxes: Cryptoboxes
-}
-
 /**
  * @private
  * @param {id: string, secret: string} creds
@@ -166,15 +147,4 @@ function isCreds(creds: any): creds is Creds {
 function isConfig(config: any): config is Config {
   return config && (typeof config.url === 'string')
     && (typeof config.agent === 'string')
-}
-
-// placeholder
-class CryptoboxCore {
-  /**
-   * @factory
-   */
-  constructor () {
-    return Object.create(CryptoboxCore.prototype)
-  }
-  read () {}
 }
