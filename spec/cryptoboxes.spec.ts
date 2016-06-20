@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * Limitations under the License.
  */
-
+;
 import proxyquire = require('proxyquire')
 import Promise = require('bluebird')
 import { TYPES, type } from './support/types'

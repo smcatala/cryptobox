@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * Limitations under the License.
  */
-
+;
 import assign = require('object-assign')
 import Promise = require('bluebird')
 import getCryptoboxCore = require('./cryptobox-core')
@@ -63,7 +63,7 @@ export = <CryptoboxesFactory> function (config) {
       secret: creds.secret // TODO PBKDF2(creds.secret)
     })
 
-    let core: CryptoboxCore = getCryptoboxCore({ creds: creds})
+    let core: CryptoboxCore = getCryptoboxCore({ creds: _creds})
 
     let cryptobox: Cryptobox = Object.create(Cryptobox.prototype)
 
@@ -71,7 +71,7 @@ export = <CryptoboxesFactory> function (config) {
      * authorization decorator (placeholder)
      */
     cryptobox.read = function () {
-      if (!isLocked()) return // an Observable Error
+      if (isLocked()) return // an Observable Error
       return core.read()
     }
 

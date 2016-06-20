@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * Limitations under the License.
  */
-
+;
 import factory = require('../src')
 import { TYPES, type } from './support/types'
 import { clone, flatMap, setProperty } from './support/helpers'
