@@ -90,7 +90,7 @@ export = <CryptoboxesFactory> function (config) {
       return Promise.resolve(cryptobox)
     }
 
-    const _lock = new Lock(900000).unlock() // ms (15min)
+    const _lock = new Lock(900000) // ms (15min)
 
     return Promise.resolve(cryptobox)
   }
@@ -140,6 +140,7 @@ function isConfig(config: any): config is Config {
 }
 
 /**
+ * @private
  * @class Lock
  */
 class Lock {
@@ -149,24 +150,32 @@ class Lock {
   /**
    * @constructor
    * @param  {number} delay in ms until autolock after unlock
-   * @returns {Lock} locked
+   * @returns {this} locked
    */
   constructor (delay: number) {
     this._delay = delay
     this.lock()
   }
 
-  lock () {
+  /**
+   * @returns {this} locked
+   */
+  lock (): this {
     this._lock = Date.now()
     return this
   }
 
-  unlock (delay?: number) {
+  /**
+   * @param  {number} delay in ms, optional, until autolock after unlock,
+   *  defaults to delay defined at instantiation.
+   * @returns {this} unlocked
+   */
+  unlock (delay?: number): this {
     this._lock = Date.now() + (delay || this._delay)
     return this
   }
 
-  isLocked () {
+  isLocked (): boolean {
     return Date.now() >= this._lock
   }
 }
