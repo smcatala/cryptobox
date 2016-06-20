@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * Limitations under the License.
  */
-
+;
 import assign = require('object-assign')
 import Promise = require('bluebird')
 import getCryptoboxCore = require('./cryptobox-core')

@@ -13,6 +13,6 @@
  * See the License for the specific language governing permissions and
  * Limitations under the License.
  */
-
+;
 require('./cb-module.spec')
 require('./cryptoboxes.spec')

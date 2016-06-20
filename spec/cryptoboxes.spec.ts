@@ -1,5 +1,4 @@
 /// <reference path="../src/cryptobox.d.ts" />
-/// <reference path="./support/mocks.d.ts" />
 
 /**
  * Copyright 2016 Stephane M. Catala
@@ -14,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * Limitations under the License.
  */
-
+;
 import proxyquire = require('proxyquire')
 import Promise = require('bluebird')
 import { TYPES, type } from './support/types'
