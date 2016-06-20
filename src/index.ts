@@ -63,7 +63,7 @@ export = <CryptoboxesFactory> function (config) {
       secret: creds.secret // TODO PBKDF2(creds.secret)
     })
 
-    let core: CryptoboxCore = getCryptoboxCore({ creds: _creds})
+    let _core: CryptoboxCore = getCryptoboxCore({ creds: _creds})
 
     let cryptobox: Cryptobox = Object.create(Cryptobox.prototype)
 
@@ -71,23 +71,13 @@ export = <CryptoboxesFactory> function (config) {
      * authorization decorator (placeholder)
      */
     cryptobox.read = function () {
-      if (isLocked()) return // an Observable Error
-      return core.read()
+      if (_lock.isLocked()) return // an Observable Error
+      return _core.read()
     }
 
     // TODO decorators for write, channel, info
 
     cryptobox = Object.freeze(cryptobox)
-
-    let _lock: number
-
-    function unlock () {
-      _lock = Date.now() + 900000 // 15min
-    }
-
-    function isLocked () {
-      return Date.now() < _lock
-    }
 
     _pool[_creds.id] = function (creds: Creds): Promise<Cryptobox> {
       if (!isCreds(creds) || (creds.id !== _creds.id)
@@ -95,12 +85,12 @@ export = <CryptoboxesFactory> function (config) {
         return Promise.reject(new Error('invalid credentials'))
       }
 
-      unlock()
+      _lock.unlock()
 
       return Promise.resolve(cryptobox)
     }
 
-    unlock()
+    const _lock = new Lock(900000).unlock() // ms (15min)
 
     return Promise.resolve(cryptobox)
   }
@@ -147,4 +137,36 @@ function isCreds(creds: any): creds is Creds {
 function isConfig(config: any): config is Config {
   return config && (typeof config.url === 'string')
     && (typeof config.agent === 'string')
+}
+
+/**
+ * @class Lock
+ */
+class Lock {
+  private _delay: number
+  private _lock: number
+
+  /**
+   * @constructor
+   * @param  {number} delay in ms until autolock after unlock
+   * @returns {Lock} locked
+   */
+  constructor (delay: number) {
+    this._delay = delay
+    this.lock()
+  }
+
+  lock () {
+    this._lock = Date.now()
+    return this
+  }
+
+  unlock (delay?: number) {
+    this._lock = Date.now() + (delay || this._delay)
+    return this
+  }
+
+  isLocked () {
+    return Date.now() >= this._lock
+  }
 }
