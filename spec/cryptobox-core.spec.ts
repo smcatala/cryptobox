@@ -13,52 +13,33 @@
  * See the License for the specific language governing permissions and
  * Limitations under the License.
  */
-
+;
 import proxyquire = require('proxyquire')
-import Promise = require('bluebird')
+import * as Promise from 'bluebird'
 import { Observable } from '@reactivex/rxjs'
 import { TYPES, type } from './support/types'
 import { clone, flatMap, setProperty } from './support/helpers'
 import { pass, fail } from './support/jasmine-bluebird'
+import { mockPouchDb } from './support/mocks.ts'
 
 const CONFIG: Config = { url: 'url', agent: 'id' }
 
 const CREDS: Creds = { id: 'id', secret: 'secret' }
 
-interface MockDb {
-  get: jasmine.Spy,
-  put: jasmine.Spy,
-  bulkDocs: jasmine.Spy,
-  allDocs: jasmine.Spy
-}
+let cbox: Cryptobox
 
-interface MockPouch {
-  new (name?: string, options?: Object): MockDb
-}
+beforeEach(function (done) { // mock pouchdb
+  const factory: CryptoboxesFactory = proxyquire('../src', {
+    'pouchdb': mockPouchDb,
+    '@noCallThru': true // error on methods not mocked
+  })
+
+  factory(CONFIG).create(CREDS)
+  .then(_cbox => cbox = _cbox)
+  .then(done)
+})
 
 describe('core Cryptobox interface', function () {
-  let PouchDB: MockPouch
-  let db: MockDb
-  let cbox: Cryptobox
-
-  beforeEach(function () { // set up PouchDB mock
-    db = jasmine.createSpyObj('db', [
-      'get', 'put', 'bulkDocs', 'allDocs' // mock subset
-    ])
-    PouchDB = <any>(jasmine.createSpy('PouchDB').and.returnValue(db))
-  })
-
-  beforeEach(function (done) {
-    let factory: CryptoboxesFactory = proxyquire('../src', {
-      'pouchdb': PouchDB,
-      '@noCallThru': true // error on methods not mocked
-    })
-
-    factory(CONFIG).create(CREDS)
-    .then(_cbox => cbox = _cbox)
-    .then(done)
-  })
-
   describe('read', function () {
     it('returns a completed Observable when called without arguments',
     function () {

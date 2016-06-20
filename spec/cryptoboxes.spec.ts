@@ -1,5 +1,4 @@
 /// <reference path="../src/cryptobox.d.ts" />
-/// <reference path="./support/mocks.d.ts" />
 
 /**
  * Copyright 2016 Stephane M. Catala
