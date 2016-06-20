@@ -16,3 +16,4 @@
 
 require('./cb-module.spec')
 require('./cryptoboxes.spec')
+require('./cryptobox-core.spec')

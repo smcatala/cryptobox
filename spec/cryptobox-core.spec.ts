@@ -14,7 +14,7 @@
  * Limitations under the License.
  */
 
-import factory = require('../src')
+import proxyquire = require('proxyquire')
 import Promise = require('bluebird')
 import { Observable } from '@reactivex/rxjs'
 import { TYPES, type } from './support/types'
@@ -25,14 +25,45 @@ const CONFIG: Config = { url: 'url', agent: 'id' }
 
 const CREDS: Creds = { id: 'id', secret: 'secret' }
 
+interface MockDb {
+  get: jasmine.Spy,
+  put: jasmine.Spy,
+  bulkDocs: jasmine.Spy,
+  allDocs: jasmine.Spy
+}
+
+interface MockPouch {
+  new (name?: string, options?: Object): MockDb
+}
+
 describe('core Cryptobox interface', function () {
+  let PouchDB: MockPouch
+  let db: MockDb
   let cbox: Cryptobox
+
+  beforeEach(function () { // set up PouchDB mock
+    db = jasmine.createSpyObj('db', [
+      'get', 'put', 'bulkDocs', 'allDocs' // mock subset
+    ])
+    PouchDB = <any>(jasmine.createSpy('PouchDB').and.returnValue(db))
+  })
+
   beforeEach(function (done) {
+    let factory: CryptoboxesFactory = proxyquire('../src', {
+      'pouchdb': PouchDB,
+      '@noCallThru': true // error on methods not mocked
+    })
+
     factory(CONFIG).create(CREDS)
     .then(_cbox => cbox = _cbox)
     .then(done)
   })
 
   describe('read', function () {
+    it('returns a completed Observable when called without arguments',
+    function () {
+      let res: any = cbox.read()
+      expect(res instanceof Observable).toBe(true) // placeholder: instanceof is not reliable
+    })
   })
 })
