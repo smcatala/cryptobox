@@ -16,7 +16,7 @@
 
 import assign = require('object-assign')
 import Promise = require('bluebird')
-import CryptoboxCoreClass = require('./cryptobox-core')
+import getCryptoboxCore = require('./cryptobox-core')
 
 /**
  * @public
@@ -63,7 +63,7 @@ export = <CryptoboxesFactory> function (config) {
       secret: creds.secret // TODO PBKDF2(creds.secret)
     })
 
-    let core: CryptoboxCore = (<Function>CryptoboxCoreClass)()
+    let core: CryptoboxCore = getCryptoboxCore({ creds: creds})
 
     let cryptobox: Cryptobox = Object.create(Cryptobox.prototype)
 
