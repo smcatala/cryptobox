@@ -1,4 +1,5 @@
 /// <reference path="../src/cryptobox.d.ts" />
+/// <reference path="./support/mocks.d.ts" />
 
 /**
  * Copyright 2016 Stephane M. Catala
@@ -27,20 +28,19 @@ const CREDS: Creds = { id: 'id', secret: 'secret' }
 describe('Cryptoboxes interface', function () {
   let factory: CryptoboxesFactory
   let cboxes: Cryptoboxes
-  let CryptoboxCore: jasmine.Spy & Cryptobox
+  let getCryptoboxCore: jasmine.Spy
 
   beforeEach(function () { // set up CryptoboxCore mock
-    CryptoboxCore = <jasmine.Spy & Cryptobox> jasmine.createSpy('CryptoboxCore')
-    let CryptoboxMethods = jasmine.createSpyObj('CryptoboxMethods', [
+    let CryptoboxCoreProto = jasmine.createSpyObj('CryptoboxMethods', [
       'read', 'write', 'channel', 'info'
     ])
-    Object.keys(CryptoboxMethods)
-    .forEach(method => CryptoboxCore[method] = CryptoboxMethods[method])
+    getCryptoboxCore = jasmine.createSpy('getCryptoboxCore')
+    .and.returnValue(Object.create(CryptoboxCoreProto))
   })
 
   beforeEach(function () {
     factory = proxyquire('../src', {
-      './cryptobox-core': CryptoboxCore,
+      './cryptobox-core': getCryptoboxCore,
       '@noCallThru': true
     })
 
@@ -174,7 +174,7 @@ describe('Cryptoboxes interface', function () {
     it('calls the core Cryptobox factory', function (done) {
       cboxes.create(CREDS)
       .then(cbox => {
-        expect(CryptoboxCore).toHaveBeenCalled()
+        expect(getCryptoboxCore).toHaveBeenCalled()
         return Promise.resolve(done())
       })
     })

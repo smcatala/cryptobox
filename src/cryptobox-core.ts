@@ -15,15 +15,15 @@
  */
 
 // placeholder
-export = CryptoboxCoreClass
+/**
+ * @factory
+ * @param  {{creds:Creds}} spec
+ * @returns {CryptoboxCore}
+ */
+export = function getInstance (spec: { creds: Creds }): CryptoboxCore {
+  return Object.create(CryptoboxCoreClass.prototype)
+}
 
 class CryptoboxCoreClass implements CryptoboxCore {
-  /**
-   * @factory
-   */
-  constructor () {
-    return Object.create(CryptoboxCoreClass.prototype)
-  }
-
   read () {}
 }
