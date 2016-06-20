@@ -63,7 +63,7 @@ export = <CryptoboxesFactory> function (config) {
       secret: creds.secret // TODO PBKDF2(creds.secret)
     })
 
-    let core: CryptoboxCore = getCryptoboxCore({ creds: creds})
+    let core: CryptoboxCore = getCryptoboxCore({ creds: _creds})
 
     let cryptobox: Cryptobox = Object.create(Cryptobox.prototype)
 
@@ -71,7 +71,7 @@ export = <CryptoboxesFactory> function (config) {
      * authorization decorator (placeholder)
      */
     cryptobox.read = function () {
-      if (!isLocked()) return // an Observable Error
+      if (isLocked()) return // an Observable Error
       return core.read()
     }
 
