@@ -1,4 +1,4 @@
-/// <reference path="../src/cryptobox.d.ts" />
+/// <reference path="../typings/index.d.ts" />
 
 /**
  * Copyright 2016 Stephane M. Catala
@@ -14,6 +14,7 @@
  * Limitations under the License.
  */
 ;
+import { CryptoboxesFactory, Cryptoboxes, Cryptobox, Config, Creds } from '../src'
 import proxyquire = require('proxyquire')
 import * as Promise from 'bluebird'
 import { Observable } from '@reactivex/rxjs'
@@ -29,22 +30,30 @@ const CREDS: Creds = { id: 'id', secret: 'secret' }
 let cbox: Cryptobox
 
 beforeEach(function (done) { // mock pouchdb
-  const factory: CryptoboxesFactory = proxyquire('../src', {
+  const cb = proxyquire('../src', {
     'pouchdb': mockPouchDb,
     '@noCallThru': true // error on methods not mocked
   })
 
-  factory(CONFIG).create(CREDS)
+  const cboxes: Cryptoboxes = cb.getCryptoboxes(CONFIG)
+
+  cboxes.create(CREDS)
   .then(_cbox => cbox = _cbox)
   .then(done)
+
+  cboxes.access(CREDS) // unlock
 })
 
 describe('core Cryptobox interface', function () {
   describe('read', function () {
     it('returns a completed Observable when called without arguments',
-    function () {
-      let res: any = cbox.read()
-      expect(res instanceof Observable).toBe(true) // placeholder: instanceof is not reliable
+    function (done) {
+      cbox.read()
+      .subscribe({
+        next: fail(done, 'expected complete, not next'),
+        error: fail(done, 'expected complete, not error'),
+        complete: pass(done)
+      })
     })
   })
 })
