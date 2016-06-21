@@ -14,11 +14,15 @@
  * Limitations under the License.
  */
 ;
-import { getCryptoboxes as factory, Config } from '../src'
+import { getCryptoboxes as factory, Cryptoboxes, Config } from '../src'
+import assign = require('object-assign')
 import { TYPES, type } from './support/types'
 import { clone, flatMap, setProperty } from './support/helpers'
 
-const CONFIG: Config = { url: 'url', agent: 'id' }
+const CONFIGS = {
+  min: <Config>{ url: 'url', agent: 'id' },
+  opts: { autolock: 900000 }
+}
 
 describe('cryptobox module', function () {
   it('exports a function', function () {
@@ -26,16 +30,18 @@ describe('cryptobox module', function () {
   })
 
   describe('exported function', function () {
-    describe('requires a mandatory config: { url: string, agent: string } argument',
-    function () {
-      let config: Config
+    let configs: { min: Config, max: Config }
 
-      beforeEach(function () {
-        config = clone<Config,Config>(CONFIG)
-      })
+    beforeEach(function () {
+      configs = {
+        min: assign(<Config>{}, CONFIGS.min),
+        max: assign(<Config>{}, CONFIGS.min, CONFIGS.opts)
+      }
+    })
 
-      it('accepts a config: { url: string, agent: string } argument', function () {
-        expect(() => factory(config)).not.toThrowError()
+    describe('enforces argument invariants', function () {
+      it('accepts a { url: string, agent: string } config argument', function () {
+        expect(() => factory(configs.min)).not.toThrowError()
       })
 
       it('throws when missing', function () {
@@ -51,46 +57,54 @@ describe('cryptobox module', function () {
         })
       })
 
-      it('throws when missing a mandatory property', function () {
-        Object.keys(config)
-        .map(prop => setProperty(clone(config), prop)) // delete prop
+      it('throws when missing any of the mandatory ["url", "agent"] properties',
+      function () {
+        Object.keys(configs.min)
+        .map(prop => setProperty(assign({}, configs.min), prop)) // delete prop
         .forEach(arg => expect(() => (<Function>factory)(arg))
           .toThrowError('invalid argument'))
       })
 
-      it('throws when type of a property is invalid', function () {
-        flatMap(Object.keys(config)
-          .map(prop => ({ prop: prop, type: type(config[prop]) })),
+      it('throws when type of a mandatory property is invalid', function () {
+        flatMap(Object.keys(configs.min)
+          .map(prop => ({ prop: prop, type: type(configs.min[prop]) })),
         ctx => Object.keys(TYPES)
           .filter(key => key !== ctx.type)
-          .map(key => setProperty(clone(config), ctx.prop, TYPES[key])))
+          .map(key => setProperty(assign({}, configs.max), ctx.prop, TYPES[key])))
         .forEach(arg => expect(() => (<Function>factory)(arg))
           .toThrowError('invalid argument'))
       })
     })
-  })
 
-  it('copies the config object argument defensively', function () {
-    let arg = clone<Config, Config>(CONFIG)
-    let cboxes = factory(arg)
-    Object.keys(arg).forEach(key => {
-      delete arg[key]
-      expect(cboxes.config[key]).toEqual(CONFIG[key])
+    it('copies the config object argument defensively', function () {
+      let config: Config = assign(<Config>{}, configs.max)
+      let cboxes = factory(config)
+      Object.keys(config).forEach(key => config[key] += '*')
+      expect(cboxes.config).toEqual(configs.max)
     })
-  })
 
-  it('returns an immutable object that implements the Cryptoboxes interface',
-  function () {
-    const CBOXES_API = {
-      create: () => {},
-      access: () => {},
-      config: {}
-    }
-    const CBOXES = factory(CONFIG)
-    expect(Object.isFrozen(CBOXES)).toBe(true) // shallow freeze
-    Object.keys(CBOXES_API).forEach(prop => {
-      expect(type(CBOXES[prop])).toBe(type(CBOXES_API[prop])) // shallow validation
+    describe('its return value', function () {
+      let cboxes: Cryptoboxes
+
+      beforeEach(function () {
+        cboxes = factory(configs.min)
+      })
+
+      it('is an immutable object', function () {
+        expect(Object.isFrozen(cboxes)).toBe(true) // shallow freeze
+      })
+
+      it('implements the Cryptoboxes interface', function () {
+        const CBOXES_API = {
+          create: () => {},
+          access: () => {},
+          config: {}
+        }
+        Object.keys(CBOXES_API).forEach(prop => {
+          expect(type(cboxes[prop])).toBe(type(CBOXES_API[prop])) // shallow validation
+        })
+        // note that CBOXES may have additional properties
+      })
     })
-    // note that CBOXES may have additional properties
   })
 })

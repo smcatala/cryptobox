@@ -125,22 +125,37 @@ export const getCryptoboxes: CryptoboxesFactory = function (config) {
 }
 
 export interface CryptoboxesFactory {
-    (config: Config): Cryptoboxes;
+  (config: Config): Cryptoboxes
 }
 
 export interface Cryptoboxes {
-    create(creds: Creds): Promise<Cryptobox>;
-    access(creds: Creds): Promise<Cryptobox>;
-    config: Config;
+  create(creds: Creds): Promise<Cryptobox>
+  access(creds: Creds): Promise<Cryptobox>
+  config: Config
 }
 
 export interface Cryptobox extends CryptoboxCore {
-    cryptoboxes: Cryptoboxes;
+  cryptoboxes: Cryptoboxes
 }
 
+/**
+ * @prop {string} url of cryptobox admin server
+ * @prop {string} agent identification string
+ * @prop {number} autolock delay in ms
+ */
 export interface Config {
-    url: string;
-    agent: string;
+  /**
+   * @prop {string} url of cryptobox admin server
+   */
+  url: string
+  /**
+   * @prop {string} agent identification string
+   */
+  agent: string
+  /**
+   * @prop {number} autolock delay in ms
+   */
+  autolock?: number
 }
 
 /**
@@ -149,8 +164,9 @@ export interface Config {
  * @return {boolean} true if creds is a valid credentials object
  */
 function isCreds(creds: any): creds is Creds {
-  return creds && (typeof creds.id === 'string')
-    && (typeof creds.secret === 'string')
+  return creds
+  && (typeof creds.id === 'string')
+  && (typeof creds.secret === 'string')
 }
 
 /**
@@ -159,8 +175,9 @@ function isCreds(creds: any): creds is Creds {
  * @return {boolean} true if config is a valid Config object
  */
 function isConfig(config: any): config is Config {
-  return config && (typeof config.url === 'string')
-    && (typeof config.agent === 'string')
+  return config
+  && (typeof config.url === 'string')
+  && (typeof config.agent === 'string')
 }
 
 /**
