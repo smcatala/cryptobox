@@ -1,4 +1,4 @@
-/// <reference path="./cryptobox.d.ts" />
+/// <reference path="../typings/index.d.ts" />
 
 /**
  * Copyright 2016 Stephane M. Catala
@@ -16,7 +16,8 @@
 ;
 import assign = require('object-assign')
 import Promise = require('bluebird')
-import getCryptoboxCore = require('./cryptobox-core')
+import { getCryptoboxCore, CryptoboxCore, Creds } from './cryptobox-core'
+export { Creds } from './cryptobox-core'
 
 /**
  * @public
@@ -27,7 +28,7 @@ import getCryptoboxCore = require('./cryptobox-core')
  * - creds is not a valid credentials object {url: string, id: string}
  * - or a cryptobox instance already exists for the given creds.id
  */
-export = <CryptoboxesFactory> function (config) {
+export const getCryptoboxes: CryptoboxesFactory = function (config) {
   if (!isConfig(config)) {
     throw new Error('invalid argument')
   }
@@ -90,7 +91,7 @@ export = <CryptoboxesFactory> function (config) {
       return Promise.resolve(cryptobox)
     }
 
-    const _lock = new Lock(900000).unlock() // ms (15min)
+    const _lock = new Lock(900000) // ms (15min)
 
     return Promise.resolve(cryptobox)
   }
@@ -119,6 +120,25 @@ export = <CryptoboxesFactory> function (config) {
   })
 }
 
+export interface CryptoboxesFactory {
+    (config: Config): Cryptoboxes;
+}
+
+export interface Cryptoboxes {
+    create(creds: Creds): Promise<Cryptobox>;
+    access(creds: Creds): Promise<Cryptobox>;
+    config: Config;
+}
+
+export interface Cryptobox extends CryptoboxCore {
+    cryptoboxes: Cryptoboxes;
+}
+
+export interface Config {
+    url: string;
+    agent: string;
+}
+
 /**
  * @private
  * @param {id: string, secret: string} creds
@@ -140,6 +160,7 @@ function isConfig(config: any): config is Config {
 }
 
 /**
+ * @private
  * @class Lock
  */
 class Lock {
@@ -149,24 +170,32 @@ class Lock {
   /**
    * @constructor
    * @param  {number} delay in ms until autolock after unlock
-   * @returns {Lock} locked
+   * @returns {this} locked
    */
   constructor (delay: number) {
     this._delay = delay
     this.lock()
   }
 
-  lock () {
+  /**
+   * @returns {this} locked
+   */
+  lock (): this {
     this._lock = Date.now()
     return this
   }
 
-  unlock (delay?: number) {
+  /**
+   * @param  {number} delay in ms, optional, until autolock after unlock,
+   *  defaults to delay defined at instantiation.
+   * @returns {this} unlocked
+   */
+  unlock (delay?: number): this {
     this._lock = Date.now() + (delay || this._delay)
     return this
   }
 
-  isLocked () {
+  isLocked (): boolean {
     return Date.now() >= this._lock
   }
 }

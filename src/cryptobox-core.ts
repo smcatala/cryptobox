@@ -1,4 +1,4 @@
-/// <reference path="./cryptobox.d.ts" />
+/// <reference path="../typings/index.d.ts" />
 
 /**
  * Copyright 2016 Stephane M. Catala
@@ -14,16 +14,33 @@
  * Limitations under the License.
  */
 ;
+import { Observable, Observer } from '@reactivex/rxjs'
+
 // placeholder
 /**
  * @factory
  * @param  {{creds:Creds}} spec
  * @returns {CryptoboxCore}
  */
-export = function getInstance (spec: { creds: Creds }): CryptoboxCore {
+export const getCryptoboxCore: CryptoboxCoreFactory = function (spec) {
   return Object.create(CryptoboxCoreClass.prototype)
 }
 
+export interface CryptoboxCoreFactory {
+  (spec: { creds: Creds }): CryptoboxCore
+}
+
+export interface CryptoboxCore {
+  read (): Observable<any>
+}
+
+export interface Creds {
+    id: string;
+    secret: string;
+}
+
 class CryptoboxCoreClass implements CryptoboxCore {
-  read () {}
+  read () {
+    return Observable.create((obs: Observer<any>) => obs.complete())
+  }
 }
