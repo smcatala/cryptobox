@@ -1,4 +1,4 @@
-/// <reference path="./cryptobox.d.ts" />
+/// <reference path="../typings/index.d.ts" />
 
 /**
  * Copyright 2016 Stephane M. Catala
@@ -16,7 +16,8 @@
 ;
 import assign = require('object-assign')
 import Promise = require('bluebird')
-import getCryptoboxCore = require('./cryptobox-core')
+import { getCryptoboxCore, CryptoboxCore, Creds } from './cryptobox-core'
+export { Creds } from './cryptobox-core'
 
 /**
  * @public
@@ -27,7 +28,7 @@ import getCryptoboxCore = require('./cryptobox-core')
  * - creds is not a valid credentials object {url: string, id: string}
  * - or a cryptobox instance already exists for the given creds.id
  */
-export = <CryptoboxesFactory> function (config) {
+export const getCryptoboxes: CryptoboxesFactory = function (config) {
   if (!isConfig(config)) {
     throw new Error('invalid argument')
   }
@@ -117,6 +118,25 @@ export = <CryptoboxesFactory> function (config) {
     access: getCryptobox,
     config: Object.freeze(assign({}, config)) // defensive copy
   })
+}
+
+export interface CryptoboxesFactory {
+    (config: Config): Cryptoboxes;
+}
+
+export interface Cryptoboxes {
+    create(creds: Creds): Promise<Cryptobox>;
+    access(creds: Creds): Promise<Cryptobox>;
+    config: Config;
+}
+
+export interface Cryptobox extends CryptoboxCore {
+    cryptoboxes: Cryptoboxes;
+}
+
+export interface Config {
+    url: string;
+    agent: string;
 }
 
 /**

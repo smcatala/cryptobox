@@ -1,4 +1,4 @@
-/// <reference path="../src/cryptobox.d.ts" />
+/// <reference path="../typings/index.d.ts" />
 
 /**
  * Copyright 2016 Stephane M. Catala
@@ -14,7 +14,7 @@
  * Limitations under the License.
  */
 ;
-import factory = require('../src')
+import { getCryptoboxes as factory, Config } from '../src'
 import { TYPES, type } from './support/types'
 import { clone, flatMap, setProperty } from './support/helpers'
 

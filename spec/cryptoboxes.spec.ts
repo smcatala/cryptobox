@@ -1,4 +1,4 @@
-/// <reference path="../src/cryptobox.d.ts" />
+/// <reference path="../typings/index.d.ts" />
 
 /**
  * Copyright 2016 Stephane M. Catala
@@ -14,8 +14,10 @@
  * Limitations under the License.
  */
 ;
+import { CryptoboxesFactory, Cryptoboxes, Cryptobox, Config, Creds } from '../src'
 import proxyquire = require('proxyquire')
 import Promise = require('bluebird')
+import {Observable} from '@reactivex/rxjs'
 import { TYPES, type } from './support/types'
 import { clone, flatMap, setProperty } from './support/helpers'
 import { pass, fail } from './support/jasmine-bluebird'
@@ -25,37 +27,37 @@ const CONFIG: Config = { url: 'url', agent: 'id' }
 const CREDS: Creds = { id: 'id', secret: 'secret' }
 
 describe('Cryptoboxes interface', function () {
-  let factory: CryptoboxesFactory
   let cboxes: Cryptoboxes
   let getCryptoboxCore: jasmine.Spy
 
   beforeEach(function () { // set up CryptoboxCore mock
-    let CryptoboxCoreProto = jasmine.createSpyObj('CryptoboxMethods', [
+    const CryptoboxCoreProto = jasmine.createSpyObj('CryptoboxMethods', [
       'read', 'write', 'channel', 'info'
     ])
+    const cryptoboxCore = Object.create(CryptoboxCoreProto)
     getCryptoboxCore = jasmine.createSpy('getCryptoboxCore')
-    .and.returnValue(Object.create(CryptoboxCoreProto))
+    getCryptoboxCore.and.returnValue(cryptoboxCore)
   })
 
   beforeEach(function () {
-    factory = proxyquire('../src', {
-      './cryptobox-core': getCryptoboxCore,
+    const cb = proxyquire('../src', {
+      './cryptobox-core': {
+        getCryptoboxCore: getCryptoboxCore
+      },
       '@noCallThru': true
     })
-
-    cboxes = factory(CONFIG)
+    cboxes = cb.getCryptoboxes(CONFIG)
   })
 
   describe('create', function () {
-    describe('requires a mandatory credentials: { id: string, secret: string } argument',
-    function () {
+    describe('enforces argument invariants', function () {
       let creds: Creds
 
       beforeEach(function () {
         creds = clone<Creds, Creds>(CREDS)
       })
 
-      it('accepts a credentials: { id: string, secret: string } argument',
+      it('accepts a { id: string, secret: string } credentials argument',
       function (done) {
         cboxes.create(creds)
         .then(pass(done))
@@ -108,6 +110,24 @@ describe('Cryptoboxes interface', function () {
             (err.message === 'invalid credentials'))
             ? pass(done)() : fail(done)(errors)))
       })
+
+      it('rejects with "invalid credentials" Error when a Cryptobox instance ' +
+      'already exists for the given creds.id', function (done) {
+        Object.keys(creds)
+        .filter(key => key != 'id')
+        .forEach(key => creds[key] += '*')
+
+        cboxes.create(CREDS)
+        .then(cbox => Promise.any([
+          cboxes.create(CREDS),
+          cboxes.create(creds)
+        ]))
+        .then(fail(done, 'expected Error'))
+        .catch(Promise.AggregateError, errors =>
+          (errors.every((err: Error) =>
+            (err.message === 'invalid credentials'))
+            ? pass(done)() : fail(done)(errors)))
+      })
     })
 
     it('copies the credentials object defensively', function (done) {
@@ -121,60 +141,57 @@ describe('Cryptoboxes interface', function () {
       .catch(fail(done))
     })
 
-    it('returns an "instanceof" itself, ' +
-    'i.e. the constructor of the returned instance is itself',
+    it('calls the core Cryptobox factory with the frozen credentials copy',
     function (done) {
-      cboxes.create(CREDS)
+      let creds = clone<Creds, Creds>(CREDS)
+      cboxes.create(creds)
       .then(cbox => {
-        expect(cbox instanceof cboxes.create).toBe(true)
+        let args = getCryptoboxCore.calls.allArgs()
+        expect(args.length).toBe(1)
+        Object.keys(CREDS).forEach(key => creds[key] += '*')
+        expect(args[0]).toEqual([{ creds: CREDS }])
+        expect(Object.isFrozen(args[0][0].creds))
+
         return Promise.resolve(done())
       })
-      .catch(fail(done))
     })
 
-    it('returns an immutable object that implements the Cryptobox interface',
-    function (done) {
-      const CBOX_API = {
-        read: () => {},
-        write: () => {},
-        channel: () => {},
-        info: () => {}
-      }
-      cboxes.create(CREDS)
-      .then(cbox => {
+    describe('its return value', function () {
+      let cbox: Cryptobox
+
+      beforeEach(function (done) {
+        cboxes.create(CREDS)
+        .then(_cbox => cbox = _cbox)
+        .then(done)
+      })
+
+      it('is an "instanceof" cryptoboxes#create', function () {
+        expect(cbox instanceof cboxes.create).toBe(true)
+      })
+
+      it('is an immutable object that implements the Cryptobox interface',
+      function () {
+        const CBOX_API = {
+          read: () => {},
+          write: () => {},
+          channel: () => {},
+          info: () => {}
+        }
+
         expect(Object.isFrozen(cbox)).toBe(true) // shallow freeze
         Object.keys(CBOX_API).forEach(prop => {
           expect(type(cbox[prop])).toBe(type(CBOX_API[prop])) // shallow validation
         }) // note that CBOX may have additional properties
-        return Promise.resolve(done())
       })
-      .catch(fail(done))
-    })
 
-    it('rejects with "invalid credentials" Error when a Cryptobox instance already exists for the given creds.id',
-    function (done) {
-      let creds = clone<Creds, Creds>(CREDS)
-      Object.keys(creds)
-      .filter(key => key != 'id')
-      .forEach(key => creds[key] += '*')
-
-      ;(<Promise<Cryptobox>>cboxes.create(CREDS)) // Bluebird Promise
-      .then(cbox => Promise.any([
-        cboxes.create(CREDS),
-        cboxes.create(creds)
-      ]))
-      .then(fail(done, 'expected Error'))
-      .catch(Promise.AggregateError, errors =>
-        (errors.every((err: Error) =>
-          (err.message === 'invalid credentials'))
-          ? pass(done)() : fail(done)(errors)))
-    })
-
-    it('calls the core Cryptobox factory', function (done) {
-      cboxes.create(CREDS)
-      .then(cbox => {
-        expect(getCryptoboxCore).toHaveBeenCalled()
-        return Promise.resolve(done())
+      it('is locked', function (done) {
+        cbox.read()
+        .subscribe({
+          next: fail(done, 'expected Error, not next'),
+          error: (err: Error) => (err.message === 'unauthorized')
+            ? pass(done)(): fail(done)(err.message),
+          complete: fail(done, 'expected Error, not complete')
+        })
       })
     })
   })
@@ -188,15 +205,14 @@ describe('Cryptoboxes interface', function () {
       .then(done)
     })
 
-    describe('requires a mandatory credentials: { id: string, secret: string } argument',
-    function () {
+    describe('enforces argument invariants', function () {
       let creds: Creds
 
       beforeEach(function () {
         creds = clone<Creds, Creds>(CREDS)
       })
 
-      it('accepts a credentials: { id: string, secret: string } argument',
+      it('accepts a { id: string, secret: string } credentials argument',
       function (done) {
         cboxes.access(creds)
         .then(pass(done))
@@ -249,6 +265,30 @@ describe('Cryptoboxes interface', function () {
             (err.message === 'invalid credentials'))
             ? pass(done)() : fail(done)(errors)))
       })
+
+      it('rejects with "invalid credentials" Error ' +
+      'when there is no Cryptobox instance for the given creds.id',
+      function (done) {
+        creds.id += '*'
+
+        cboxes.access(creds)
+        .then(fail(done, 'expected Error'))
+        .catch((err: Error) => (err.message === 'invalid credentials')
+          ? pass(done)() : fail(done)(err))
+      })
+
+      it('rejects with "invalid credentials" Error when the credentials ' +
+      'do not match those of the corresponding Cryptobox instance',
+      function (done) {
+        Object.keys(creds)
+        .filter(key => key != 'id')
+        .forEach(key => creds[key] += '*')
+
+        cboxes.access(creds)
+        .then(fail(done, 'expected Error'))
+        .catch((err: Error) => (err.message === 'invalid credentials')
+          ? pass(done)() : fail(done)(err))
+      })
     })
 
     it('returns a previously created Cryptobox instance',
@@ -259,32 +299,6 @@ describe('Cryptoboxes interface', function () {
         return Promise.resolve(done())
       })
       .catch(fail(done))
-    })
-
-    it('rejects with "invalid credentials" Error ' +
-    'when there is no Cryptobox instance for the given creds.id',
-    function (done) {
-      let creds = clone<Creds,Creds>(CREDS)
-      creds.id += '*'
-
-      cboxes.access(creds)
-      .then(fail(done, 'expected Error'))
-      .catch((err: Error) => (err.message === 'invalid credentials')
-        ? pass(done)() : fail(done)(err))
-    })
-
-    it('rejects with "invalid credentials" Error when the credentials ' +
-    'do not match those of the corresponding Cryptobox instance',
-    function (done) {
-      let creds = clone<Creds, Creds>(CREDS)
-      Object.keys(creds)
-      .filter(key => key != 'id')
-      .forEach(key => creds[key] += '*')
-
-      cboxes.access(creds)
-      .then(fail(done, 'expected Error'))
-      .catch((err: Error) => (err.message === 'invalid credentials')
-        ? pass(done)() : fail(done)(err))
     })
   })
 })

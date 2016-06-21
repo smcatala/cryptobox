@@ -39,6 +39,7 @@
   },
   "homepage": "https://github.com/zenyway/cryptobox#readme",
   "dependencies": {
+    "@reactivex/rxjs": "^5.0.0-beta.9",
     "bluebird": "^3.4.0",
     "object-assign": "^4.1.0"
   },
