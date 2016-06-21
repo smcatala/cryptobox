@@ -16,15 +16,39 @@
 ;
 import { Observable, Observer } from '@reactivex/rxjs'
 
-// placeholder
+/**
+ *
+ */
+class CryptoboxCoreClass implements CryptoboxCore {
+  /**
+   * @factory
+   * @param  {{creds:Creds}} spec
+   * @returns {CryptoboxCore}
+   */
+  static getInstance: CryptoboxCoreFactory = function (spec) {
+    return new CryptoboxCoreClass(spec)
+  }
+
+  /**
+   * @constructor
+   * @param  {{creds:Creds}} spec
+   */
+  constructor (spec: { creds: Creds }) {
+    //
+  }
+
+  read () {
+    return Observable.create((obs: Observer<any>) => obs.complete())
+  }
+}
+
 /**
  * @factory
  * @param  {{creds:Creds}} spec
  * @returns {CryptoboxCore}
  */
-export const getCryptoboxCore: CryptoboxCoreFactory = function (spec) {
-  return Object.create(CryptoboxCoreClass.prototype)
-}
+export const getCryptoboxCore: CryptoboxCoreFactory =
+CryptoboxCoreClass.getInstance
 
 export interface CryptoboxCoreFactory {
   (spec: { creds: Creds }): CryptoboxCore
@@ -37,10 +61,4 @@ export interface CryptoboxCore {
 export interface Creds {
     id: string;
     secret: string;
-}
-
-class CryptoboxCoreClass implements CryptoboxCore {
-  read () {
-    return Observable.create((obs: Observer<any>) => obs.complete())
-  }
 }
