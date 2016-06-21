@@ -16,6 +16,7 @@
 ;
 import assign = require('object-assign')
 import Promise = require('bluebird')
+import { Observable, Observer } from '@reactivex/rxjs'
 import { getCryptoboxCore, CryptoboxCore, Creds } from './cryptobox-core'
 export { Creds } from './cryptobox-core'
 
@@ -72,7 +73,10 @@ export const getCryptoboxes: CryptoboxesFactory = function (config) {
      * authorization decorator (placeholder)
      */
     cryptobox.read = function () {
-      if (_lock.isLocked()) return // an Observable Error
+      if (_lock.isLocked()) {
+        return Observable.create((obs: Observer<any>) =>
+          obs.error(new Error('UNAUTHORIZED')))
+      }
       return _core.read()
     }
 

@@ -15,6 +15,7 @@
  */
 ;
 import { CryptoboxesFactory, Cryptoboxes, Cryptobox, Config, Creds } from '../src'
+import { CryptoboxCore } from '../src/cryptobox-core'
 import proxyquire = require('proxyquire')
 import Promise = require('bluebird')
 import {Observable} from '@reactivex/rxjs'
@@ -28,21 +29,22 @@ const CREDS: Creds = { id: 'id', secret: 'secret' }
 
 describe('Cryptoboxes interface', function () {
   let cboxes: Cryptoboxes
-  let getCryptoboxCore: jasmine.Spy
+  let getCryptoboxCoreMock: jasmine.Spy
+  let cryptoboxCoreMock: CryptoboxCore
 
   beforeEach(function () { // set up CryptoboxCore mock
     const CryptoboxCoreProto = jasmine.createSpyObj('CryptoboxMethods', [
       'read', 'write', 'channel', 'info'
     ])
-    const cryptoboxCore = Object.create(CryptoboxCoreProto)
-    getCryptoboxCore = jasmine.createSpy('getCryptoboxCore')
-    getCryptoboxCore.and.returnValue(cryptoboxCore)
+    cryptoboxCoreMock = Object.create(CryptoboxCoreProto)
+    getCryptoboxCoreMock = jasmine.createSpy('getCryptoboxCore')
+    getCryptoboxCoreMock.and.returnValue(cryptoboxCoreMock)
   })
 
   beforeEach(function () {
     const cb = proxyquire('../src', {
       './cryptobox-core': {
-        getCryptoboxCore: getCryptoboxCore
+        getCryptoboxCore: getCryptoboxCoreMock
       },
       '@noCallThru': true
     })
@@ -146,7 +148,7 @@ describe('Cryptoboxes interface', function () {
       let creds = clone<Creds, Creds>(CREDS)
       cboxes.create(creds)
       .then(cbox => {
-        let args = getCryptoboxCore.calls.allArgs()
+        let args = getCryptoboxCoreMock.calls.allArgs()
         expect(args.length).toBe(1)
         Object.keys(CREDS).forEach(key => creds[key] += '*')
         expect(args[0]).toEqual([{ creds: CREDS }])
@@ -188,7 +190,7 @@ describe('Cryptoboxes interface', function () {
         cbox.read()
         .subscribe({
           next: fail(done, 'expected Error, not next'),
-          error: (err: Error) => (err.message === 'unauthorized')
+          error: (err: Error) => (err.message === 'UNAUTHORIZED')
             ? pass(done)(): fail(done)(err.message),
           complete: fail(done, 'expected Error, not complete')
         })
@@ -291,14 +293,24 @@ describe('Cryptoboxes interface', function () {
       })
     })
 
-    it('returns a previously created Cryptobox instance',
-    function (done) {
-      cboxes.access(CREDS)
-      .then(cbox => {
-        expect(cbox).toBe(cryptobox)
-        return Promise.resolve(done())
+    describe('its return value', function () {
+      let cbox: Cryptobox
+
+      beforeEach(function (done) {
+        cboxes.access(CREDS)
+        .then(_cbox => cbox = _cbox)
+        .then(done)
       })
-      .catch(fail(done))
+
+      it('is a previously created Cryptobox instance',
+      function () {
+        expect(cbox).toBe(cryptobox)
+      })
+
+      it('is unlocked', function () {
+        cbox.read()
+        expect(cryptoboxCoreMock.read).toHaveBeenCalledTimes(1)
+      })
     })
   })
 })
