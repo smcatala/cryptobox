@@ -6,7 +6,6 @@
   },
   "dependencies": {
     "bluebird": "registry:npm/bluebird#3.3.4+20160531224558",
-    "object-assign": "registry:npm/object-assign#4.0.1+20160301180549",
     "proxyquire": "registry:npm/proxyquire#1.0.0+20160211003958"
   }
 }
